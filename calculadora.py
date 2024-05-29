@@ -1,25 +1,20 @@
 import math
 import re
 
-def soma(n1,n2):
-    resultado=float(n1)+float(n2)   
-    return resultado
+def soma(n1,n2): 
+    return float(n1)+float(n2) 
 
 def subtracao(n1,n2):
-    resultado=float(n1)-float(n2)   
-    return resultado
+    return float(n1)-float(n2)  
 
 def divisao(n1,n2):
-    resultado=float(n1)/float(n2)   
-    return resultado
+    return float(n1)/float(n2)   
 
 def multiplicao(n1,n2):
-    resultado=float(n1)*float(n2)  
-    return resultado
+    return float(n1)*float(n2) 
 
 def expoente(n1,n2):
-    resultado=float(n1)**float(n2)  
-    return resultado
+    return float(n1)**float(n2)  
 
 def equacao1(exp):
     exp.pop(0)
@@ -31,6 +26,7 @@ def equacao1(exp):
     print(aux_eq1)
     antes_igual=aux_eq1.split('=')[0]
     depois_igual=aux_eq1.split('=')[1]
+
     if 'x' in depois_igual.split()[0] and not '-' in depois_igual.split()[0]:#se o x for o primeiro numero e for positivo
         depois_igual='+'+depois_igual
     if not 'x' in antes_igual.split()[0] and not '-' in antes_igual.split()[0]:#se o x for o primeiro numero e for positivo
@@ -69,8 +65,12 @@ def equacao1(exp):
             depois_igual=float(depois_igual)/float(y)
             print(antes_igual.replace(y,''),'=',depois_igual)
 
-def equacao2(a,b,c):
+def equacao2(exp):
+    a=exp[1]
+    b= exp[2]+exp[3]
+    c=exp[4]+exp[5]
     eq2_item=[a,b,c]
+
     print(eq2_item)
     for i in range(0,3):#tira o x das variaveis
         eq2_item[i]=re.sub(r'x|\^2|\+|=','',eq2_item[i])
@@ -100,21 +100,6 @@ def equacao2(a,b,c):
         else:
             print('raiz negativa, não existe nos numeros Reais')
 
-def prioridade(list, op):
-    x=0
-    resultado=0
-    global aux2
-    global aux
-    while x!=len(list):
-        if list[x]==op:
-            resultado=calculos[op](aux2[x*2],aux2[x*2+2])
-            del(aux2[x*2:x*2+3])
-            del(aux[x])
-            aux2.insert(x*2, resultado)
-            x=-1
-        x+=1
-    return resultado
-
 calculos={
     '+':soma,
     '-':subtracao,
@@ -124,55 +109,47 @@ calculos={
     'eq1':equacao1,
     'eq2':equacao2
 }
-
+prioridades=[['^'],['*','/'],['+','-']]#lista de operaçoes prioridades
 final=0.0
-i=1
+continuar=True
 
 def resolucao(expressao,v):
-    c=0
-    global i
-    global aux2
-    global aux
+    global continuar
+    x=0#contador das prioridades
+    aux2=[]# auxiliar para a expressão
+    aux=[]# auxiliar para os sinais
     try:
         if '(' in expressao and ')' in expressao:
-            aux3=re.findall(r'\([-+*/\^0-9\s]{0,}\)', expressao)
-            a=0
-            b=0.0
-            while a!=len(aux3):
-                b=resolucao(' '.join(re.sub(r'[( )]','',aux3[a])),'eq')
-                expressao=expressao.replace(aux3[a],str(b))
-                a+=1
+            aux3=re.findall(r'\([-+*/\^0-9\s]{0,}\)', expressao)#pega a operação entre parenteses
+            cont=0
+            while cont!=len(aux3):
+                expressao=expressao.replace(aux3[cont],str(resolucao(' '.join(re.sub(r'[( )]','',aux3[cont])),'eq')))
+                cont+=1
         aux2=expressao.split()
-        aux=list(re.sub('[0-9.]|[-+]+[0-9.]|\s','',expressao))#transforma números e espaços em nada
+        aux=list(re.sub('[0-9.]|[-+]+[0-9.]|\s','',expressao))#transforma números e espaços em nada, deixando apenas os sinais
         if aux2[0]=='p':#interrope processo
-            i=0
+            continuar=False
         elif aux2[0]=='a':
             ajuda()
         else:
-            if 'eq1' in aux2:
-                calculos['eq1'](aux2)
-            elif 'eq2' in aux2:
-                calculos['eq2'](aux2[1], aux2[2]+aux2[3], aux2[4]+aux2[5])
+            if aux2[0].startswith('eq'):#caso a expressão seja uma equação
+                calculos[aux2[0]](aux2)
             else:
-                if len(aux)>0:#verifica se existe ao menos 1 operação
-                    if aux2[0] in ['+','-']:
-                        aux2[1]=aux2[0]+aux2[1]
-                        aux.pop(0)
-                        aux2.pop(0)
-                    if '^' in aux:
-                        final=prioridade(aux,'^')
-                    if '*' in aux:
-                        final=prioridade(aux,'*')
-                    if '/' in aux:
-                        final=prioridade(aux,'/')
-                    while c!=len(aux):
-                        calculo=calculos[aux[0+c]]
-                        final=calculo(aux2[0],aux2[2])
-                        del(aux2[0:2])
-                        aux2[0]=final
-                        c+=1
-                else:
-                    final=aux2[0]
+                if aux2[0] in ['+','-']:
+                    aux2[1]=aux2[0]+aux2[1]
+                    aux.pop(0)
+                    aux2.pop(0)
+                for op in prioridades:#vai rodando pelo loop, calculando primeiro os sinais de maior prioridade
+                    while x!=len(aux):
+                        if aux[x] in op:
+                            resultado=calculos[aux[x]](aux2[x*2],aux2[x*2+2])
+                            del(aux2[x*2:x*2+3])#exclui a operação correspondente
+                            del(aux[x])#exclui o sinal correspondente
+                            aux2.insert(x*2, resultado)
+                            x=-1
+                        x+=1
+                    x=0
+                final=aux2[0]
                 if v=='eq':
                     return final
                 else:
@@ -187,14 +164,14 @@ def ajuda():
         'ex: 4 + 5 * -2; 8 + -2 / 6; 2 ^ 2\n',
         '\nOperaçôes:\n',
         'p = pausar/sair; a = ajuda\n',
-        '+ = soma; - = subtração; * = multiplicação; / = divisão; ^ = expoente\n',
-        'Ex: 2 + 2 | 2 - 2 | 2 * -2 | -2 / 2 | 2 ^ 2\n',
+        '+ = soma;\t - = subtração;\t * = multiplicação;\t / = divisão;\t ^ = expoente\n',
+        'Ex: 2 + 2 \t 2 - 2 \t\t 2 * -2 \t\t -2 / 2 \t 2 ^ 2\n',
         'eq1 no inicio = equação de primeiro grau(ex: eq1 9x - 4x + 10 = 7x - 30)\n',
         'eq2 no inicio = equação de segundo grau(ex: eq2 x^2 - x - 12 = 0 | eq2 3x^2 - 27 = 0 | eq2 5x^2 - 45x = 0)\n'
     )
 
 ajuda()
 
-while i==1:
+while continuar:
     conta=input('Expresse a conta:')
     resolucao(conta,'')
